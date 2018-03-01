@@ -171,10 +171,35 @@ open class Floaty: UIView {
     @objc open var friendlyTap: Bool = true
     
     @objc open var sticky: Bool = false
-    
+
+    @IBInspectable
+    @objc open var progressClockwise: Bool = true
+
     open static var global: FloatyManager {
         get {
             return FloatyManager.defaultInstance()
+        }
+    }
+    
+    @IBInspectable
+    @objc open var progress: Float = 0 {
+        willSet(newValue)
+        {
+            progressLayer.strokeEnd = CGFloat(newValue)
+        }
+    }
+    
+    @IBInspectable
+    @objc open var progressColor: UIColor = UIColor.orange {
+        didSet {
+            self.setNeedsDisplay()
+        }
+    }
+
+    @IBInspectable
+    @objc open var progressWidth: CGFloat = 2 {
+        didSet {
+            self.setNeedsDisplay()
         }
     }
     
@@ -182,6 +207,11 @@ open class Floaty: UIView {
      Delegate that can be used to learn more about the behavior of the FAB widget.
      */
     @IBOutlet open weak var fabDelegate: FloatyDelegate?
+
+    /**
+     ProgressBar shape layer.
+     */
+    fileprivate var progressLayer: CAShapeLayer = CAShapeLayer()
     
     /**
      Button shape layer.
@@ -280,6 +310,7 @@ open class Floaty: UIView {
             size = min(frame.size.width, frame.size.height)
         }
         
+        setProgressLayer()
         setCircleLayer()
         if buttonImage == nil {
             setPlusLayer()
@@ -617,6 +648,17 @@ open class Floaty: UIView {
         layer.addSublayer(circleLayer)
     }
     
+    fileprivate func setProgressLayer() {
+        progressLayer.removeFromSuperlayer()
+        progressLayer.path = self.progressBezierPath().cgPath
+        progressLayer.lineWidth = progressWidth
+        progressLayer.lineCap = kCALineCapRound
+        progressLayer.fillColor = nil
+        progressLayer.strokeColor = progressColor.cgColor
+        progressLayer.strokeEnd = CGFloat(progress)
+        layer.addSublayer(progressLayer)
+    }
+    
     fileprivate func setPlusLayer() {
         plusLayer.removeFromSuperlayer()
         plusLayer.frame = CGRect(x: 0, y: 0, width: size, height: size)
@@ -682,6 +724,16 @@ open class Floaty: UIView {
         path.addLine(to: CGPoint(x: size/2, y: size-size/3))
         path.move(to: CGPoint(x: size/3, y: size/2))
         path.addLine(to: CGPoint(x: size-size/3, y: size/2))
+        return path
+    }
+    
+    fileprivate func progressBezierPath() -> UIBezierPath {
+        let path = UIBezierPath()
+        let center = CGPoint(x: size/2, y: size/2)
+        let startAngle = progressClockwise ? -Double.pi/2 : 3*Double.pi/2
+        let endAngle = progressClockwise ? 3*Double.pi/2 : -Double.pi/2
+
+        path.addArc(withCenter: center, radius: center.x + (progressWidth / 2), startAngle: CGFloat(startAngle), endAngle: CGFloat(endAngle), clockwise: progressClockwise)
         return path
     }
     
